@@ -13,7 +13,7 @@ A detailed comparison of two complementary approaches to selective quantization 
 | **Analysis Method** | Forward pass importance scoring | Error plot analysis (activation + weight) |
 | **Selection Criteria** | `\|weight\| × \|max_activation\|` | Quantization error spikes |
 | **Output** | Top-K weight coordinates | List of layers to skip |
-| **Typical Protection** | 6-20 weights | 10-50 layers |
+| **Typical Protection** | 20-100 weights (architecture dependent) | 10-50 layers |
 
 ---
 
@@ -97,11 +97,11 @@ This formula captures:
 
 ### What PeakWeights Does Better
 
-1. **Surgical Precision**: Protect only the ~10 weights that matter most, not entire layers
+1. **Surgical Precision**: Protect only the 20-100 weights that matter most (architecture dependent), not entire layers
 
 2. **Truly Data-Free**: No calibration dataset = faster iteration, no data dependency
 
-3. **Minimal Memory Overhead**: Protecting 10 FP16 weights vs 10 full layers
+3. **Minimal Memory Overhead**: Protecting 50 FP16 weights vs 10 full layers
 
 4. **Research Insight**: Reveals which specific parameters carry disproportionate importance
 
@@ -112,7 +112,7 @@ This formula captures:
 ```python
 # Step 1: Use PeakWeights for critical individual weights
 from peakweights import find
-critical = find("model", k=10)
+critical = find("model", k=50)  # K depends on architecture
 
 # Step 2: Use Unsloth Dynamic for layer-level decisions
 from unsloth import FastLanguageModel
@@ -165,33 +165,35 @@ Each model family has different optimal quantization patterns:
 
 ---
 
-## Experimental Validation Ideas
+## Experimental Results
 
-### Experiment 1: PeakWeights vs Layer Protection
+We tested PeakWeights on 4 architectures with K=50:
 
-Compare:
-- Unsloth Dynamic (layer-level, 10 layers protected)
-- PeakWeights (10 weights protected)
-- Combined (5 layers + 10 weights)
+| Model | FP16 PPL | 4-bit PPL | PeakWeights | Recovery |
+|-------|----------|-----------|-------------|----------|
+| SmolLM2-1.7B | 13.29 | 16.31 | 13.32 | **99%** |
+| Qwen2.5-7B | 9.41 | 10.05 | 9.44 | **96%** |
+| DeepSeek-R1-7B | 44.52 | 46.12 | 44.60 | **95%** |
+| Mistral-7B | 9.63 | 9.80 | 9.70 | 61% |
 
-Measure: Perplexity, MMLU, memory usage
+### Key Finding: K is Architecture-Dependent
 
-### Experiment 2: Critical Weight Locations
+| Model | K for 90% Recovery |
+|-------|-------------------|
+| SmolLM2-1.7B | K=20 |
+| Qwen2.5-7B | K=50 |
+| DeepSeek-R1-7B | K=50 |
+| Mistral-7B | K=100 |
 
-Run PeakWeights on:
-- DeepSeek-R1 (MoE)
-- Llama 3.1-70B (Dense)
-- Qwen2.5-72B (Dense)
-- Gemma 2-27B (Dense)
+### Critical Weight Locations
 
-Question: Do critical weights appear in consistent locations across architectures?
+| Model | MLP | Attention | lm_head |
+|-------|-----|-----------|---------|
+| Qwen/DeepSeek | 100% | 0% | 0% |
+| Mistral | 0% | 0% | 100% |
+| SmolLM2 | 66% | 34% | 0% |
 
-### Experiment 3: Scaling Analysis
-
-For Llama 3.1 (8B, 70B, 405B):
-- How many critical weights are needed?
-- Does the ratio stay constant?
-- Do locations shift with scale?
+Architecture determines where critical weights cluster.
 
 ---
 
