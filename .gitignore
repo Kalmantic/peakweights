@@ -22,6 +22,14 @@ paper/
 # Internal documentation
 EXPLANATION.md
 RESEARCH_PACKAGE.md
+COMPARISON.md
+INTUITIVE.md
+
+# Demo/test files
+demo_*.py
+
+# Build manifests
+MANIFEST.in
 
 # Python
 *.pyc

@@ -1,6 +1,0 @@
-include README.md
-include LICENSE
-include COMPARISON.md
-include RESEARCH_PACKAGE.md
-recursive-include peakweights *.py
-recursive-include peakweights *.md
