@@ -4,7 +4,6 @@
 
 One-pass, data-free discovery of critical LLM parameters.
 
-[![Paper](https://img.shields.io/badge/Paper-PDF-red)](peakweights.pdf)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Kalmantic/peakweights/blob/main/peakweights_experiments_run5.ipynb)
 
 ```bash
@@ -138,9 +137,34 @@ peakweights Qwen/Qwen2.5-7B --recovery 95
 
 # Save protection mask
 peakweights Qwen/Qwen2.5-7B --mask protect.pt
+```
 
-# Show quantization integration code
-peakweights Qwen/Qwen2.5-7B --show_quant
+### Quantization Integration
+
+Protect critical weights during 4-bit quantization with bitsandbytes:
+
+```python
+from peakweights import find
+from transformers import AutoModelForCausalLM, BitsAndBytesConfig
+
+# Find critical weights
+critical = find("Qwen/Qwen2.5-7B", k=50)
+
+# Get modules to skip during quantization
+skip_modules = list(set(w.module for w in critical[:10]))
+
+# Load with protection
+config = BitsAndBytesConfig(
+    load_in_4bit=True,
+    bnb_4bit_compute_dtype=torch.float16,
+    llm_int8_skip_modules=skip_modules
+)
+
+model = AutoModelForCausalLM.from_pretrained(
+    "Qwen/Qwen2.5-7B",
+    quantization_config=config,
+    device_map="auto"
+)
 ```
 
 ---
