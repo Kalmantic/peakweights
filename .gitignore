@@ -21,6 +21,7 @@ paper/
 
 # Internal documentation
 EXPLANATION.md
+RESEARCH_PACKAGE.md
 
 # Python
 *.pyc
