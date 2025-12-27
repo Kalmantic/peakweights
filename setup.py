@@ -22,7 +22,7 @@ else:
 setup(
     name="peakweights",
     version="0.1.0",
-    author="Thiyagarajan M, Vamshi Ambati",
+    author="Thiyagarajan Maruthavanan, Vamshi Ambati",
     author_email="thiyagarajan@kalmantic.com",
     description="One-pass, data-free discovery of critical LLM parameters",
     long_description=long_description,
@@ -46,7 +46,7 @@ setup(
         "Programming Language :: Python :: 3.12",
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
     ],
-    py_modules=["peakweights"],  # Single module install
+    packages=["peakweights"],  # Package install
     python_requires=">=3.8",
     install_requires=[
         "torch>=2.0.0",
@@ -66,7 +66,7 @@ setup(
     },
     entry_points={
         "console_scripts": [
-            "peakweights=peakweights:main",
+            "peakweights=peakweights.peakweights:main",
         ],
     },
     keywords=[

@@ -54,7 +54,7 @@ all = [
 ]
 
 [project.scripts]
-peakweights = "peakweights:main"
+peakweights = "peakweights.peakweights:main"
 
 [project.urls]
 Homepage = "https://github.com/Kalmantic/peakweights"
@@ -63,7 +63,7 @@ Repository = "https://github.com/Kalmantic/peakweights"
 Issues = "https://github.com/Kalmantic/peakweights/issues"
 
 [tool.setuptools]
-py-modules = ["peakweights"]
+packages = ["peakweights"]
 
 [tool.black]
 line-length = 100

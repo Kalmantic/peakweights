@@ -4,9 +4,23 @@ build/
 dist/
 *.egg-info/
 
-# Results and paper
+# Results (but keep final)
 results/
+
+# LaTeX/Paper (will link from arxiv)
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.bbl
+*.blg
+*.tex
+*.pdf
 paper/
+
+# Internal documentation
+EXPLANATION.md
 
 # Python
 *.pyc
