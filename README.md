@@ -22,7 +22,7 @@ Not all weights are created equal. In a 70-billion parameter model, a tiny fract
 
 ---
 
-## How It Works (3Blue1Brown Style)
+## How It Works
 
 ### The Core Formula
 
