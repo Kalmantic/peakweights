@@ -444,6 +444,18 @@ class PeakWeightsFinder:
         print(f"    Llama-3.1-8B    ~16 GB")
         print(f"    Qwen2.5-14B     ~28 GB")
         print()
+
+        # Google Colab suggestion
+        print(f"  {Colors.GREEN}Free GPU Option - Google Colab:{Colors.END}")
+        print(f"    Run this model on a free A100 GPU:")
+        print()
+        print(f"    {Colors.BOLD}# In a Colab notebook:{Colors.END}")
+        print(f"    !pip install peakweights -q")
+        print(f"    !peakweights {self.model_name} --top_k {self.top_k}")
+        print()
+        print(f"    {Colors.DIM}Open: https://colab.research.google.com{Colors.END}")
+        print(f"    {Colors.DIM}Select: Runtime > Change runtime type > A100{Colors.END}")
+        print()
         print(f"{Colors.RED}{'─'*60}{Colors.END}\n")
 
     def find(self) -> List[CriticalWeight]:
