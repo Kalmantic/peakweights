@@ -1349,7 +1349,9 @@ def main():
                         help="Maximum K to consider when using --recovery (default: 200)")
     parser.add_argument("--show_quant", action="store_true",
                         help="Show quantization integration guide")
-    parser.add_argument("--output", "-o", help="Save results to JSON file")
+    parser.add_argument("--output", "-o", help="Save results to file (.pwi, .json, .pt, .csv)")
+    parser.add_argument("--format", "-f", choices=["pwi", "json", "pt", "csv"],
+                        help="Output format (auto-detected from extension if not specified)")
     parser.add_argument("--mask", "-m", help="Save protection mask (.pt) for quantization")
     parser.add_argument("--viz", action="store_true", help="Show layer importance visualization")
     parser.add_argument("--viz_output", help="Save visualization to file")
@@ -1397,16 +1399,17 @@ def main():
             )
 
             if args.output:
-                with open(args.output, 'w') as f:
-                    # Convert to JSON-serializable format
-                    output = {
-                        'model': args.model,
+                from .formats import save as save_weights
+                save_weights(
+                    result['weights'][:result['recommended_k']],
+                    args.output,
+                    model_name=args.model,
+                    metadata={
                         'recommended_k': result['recommended_k'],
                         'power_law_exponent': result['power_law_exponent'],
                         'cumulative_importance': {str(k): v for k, v in result['cumulative_importance'].items()},
-                        'weights': result['weights'][:result['recommended_k']],
                     }
-                    json.dump(output, f, indent=2)
+                )
                 print(f"{Colors.GREEN}✓{Colors.END} Saved calibration results to {args.output}")
             return
 
@@ -1437,16 +1440,16 @@ def main():
                 print()
 
             if args.output:
-                with open(args.output, 'w') as f:
-                    output = {
-                        'model': args.model,
+                from .formats import save as save_weights
+                save_weights(
+                    result['weights'],
+                    args.output,
+                    model_name=args.model,
+                    metadata={
                         'target_recovery': args.recovery,
-                        'k': result['k'],
                         'actual_recovery': result['actual_recovery'],
-                        'weights': result['weights'],
-                        'quantization_guide': result['quantization_guide'],
                     }
-                    json.dump(output, f, indent=2)
+                )
                 print(f"{Colors.GREEN}✓{Colors.END} Saved results to {args.output}")
 
             if args.mask:
@@ -1471,8 +1474,13 @@ def main():
 
         # Save outputs
         if args.output:
-            with open(args.output, 'w') as f:
-                json.dump([r.to_dict() for r in results], f, indent=2)
+            from .formats import save as save_weights
+            save_weights(
+                [r.to_dict() for r in results],
+                args.output,
+                model_name=args.model,
+                total_params=finder.total_params,
+            )
             print(f"{Colors.GREEN}✓{Colors.END} Saved results to {args.output}")
 
         if args.mask:

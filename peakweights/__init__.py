@@ -27,13 +27,31 @@ from .peakweights import (
     main,
 )
 
+from .formats import (
+    save,
+    load,
+    to_mask,
+    to_json,
+    get_skip_modules,
+    load_mask,
+)
+
 __version__ = "0.3.0"
 __all__ = [
+    # Core
     "find",
-    "generate_protection_mask",
-    "visualize",
     "PeakWeightsFinder",
     "CriticalWeight",
+    # Formats
+    "save",
+    "load",
+    "to_mask",
+    "to_json",
+    "get_skip_modules",
+    "load_mask",
+    # Utilities
+    "generate_protection_mask",
+    "visualize",
     "print_results",
     "Colors",
     "format_params",
