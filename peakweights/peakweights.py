@@ -438,11 +438,11 @@ class PeakWeightsFinder:
 
         # Model size reference
         print(f"  {Colors.CYAN}Typical Model Sizes (float16):{Colors.END}")
-        print(f"    SmolLM2-1.7B    ~3.5 GB")
-        print(f"    Qwen2.5-3B      ~6.5 GB")
-        print(f"    Mistral-7B      ~14 GB")
-        print(f"    Llama-3.1-8B    ~16 GB")
-        print(f"    Qwen2.5-14B     ~28 GB")
+        print(f"    HuggingFaceTB/SmolLM2-1.7B       ~3.5 GB")
+        print(f"    Qwen/Qwen2.5-3B                  ~6.5 GB")
+        print(f"    mistralai/Mistral-7B-v0.3       ~14 GB")
+        print(f"    meta-llama/Llama-3.1-8B         ~16 GB")
+        print(f"    Qwen/Qwen2.5-14B                ~28 GB")
         print()
 
         # Google Colab suggestion
@@ -450,7 +450,7 @@ class PeakWeightsFinder:
         print(f"    Run this model on a free A100 GPU:")
         print()
         print(f"    {Colors.BOLD}# In a Colab notebook:{Colors.END}")
-        print(f"    !pip install peakweights -q")
+        print(f"    !pip install git+https://github.com/Kalmantic/peakweights.git -q")
         print(f"    !peakweights {self.model_name} --top_k {self.top_k}")
         print()
         print(f"    {Colors.DIM}Open: https://colab.research.google.com{Colors.END}")

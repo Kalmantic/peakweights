@@ -229,7 +229,7 @@ Google Colab provides free GPU access, making it ideal for running PeakWeights o
 
 ```python
 # Cell 1: Install PeakWeights
-!pip install peakweights -q
+!pip install git+https://github.com/Kalmantic/peakweights.git -q
 
 # Cell 2: Run analysis on any model
 !peakweights Qwen/Qwen2.5-7B --top_k 50
@@ -239,7 +239,7 @@ Google Colab provides free GPU access, making it ideal for running PeakWeights o
 
 ```python
 # Cell 1: Install dependencies
-!pip install peakweights -q
+!pip install git+https://github.com/Kalmantic/peakweights.git -q
 
 # Cell 2: Check GPU
 import torch
@@ -261,7 +261,7 @@ print(f"Actual recovery: {results['actual_recovery']:.1%}")
 
 ```python
 # Cell 1: Install
-!pip install peakweights -q
+!pip install git+https://github.com/Kalmantic/peakweights.git -q
 
 # Cell 2: Use Python API
 from peakweights import find, calibrate
