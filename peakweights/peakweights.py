@@ -21,6 +21,9 @@ Usage:
 License: MIT
 """
 
+import warnings
+warnings.filterwarnings("ignore", message=".*pynvml.*deprecated.*")
+
 import torch
 import heapq
 import json
@@ -29,6 +32,154 @@ import sys
 import time
 from typing import List, Dict, Any, Optional, Tuple
 from dataclasses import dataclass
+
+try:
+    from importlib.metadata import version as get_version
+    __version__ = get_version("peakweights")
+except Exception:
+    __version__ = "0.3.0"  # fallback for development
+
+
+# =============================================================================
+# Memory Utilities
+# =============================================================================
+
+def estimate_model_memory(config, dtype: torch.dtype = torch.float16) -> int:
+    """
+    Estimate memory required to load a model from its config.
+
+    Returns estimated bytes needed (model weights + ~20% overhead for activations).
+    """
+    bytes_per_param = 2 if dtype in [torch.float16, torch.bfloat16] else 4
+
+    # Try to estimate parameter count from config
+    hidden_size = getattr(config, 'hidden_size', 4096)
+    num_layers = getattr(config, 'num_hidden_layers', 32)
+    vocab_size = getattr(config, 'vocab_size', 32000)
+    intermediate_size = getattr(config, 'intermediate_size', hidden_size * 4)
+    num_attention_heads = getattr(config, 'num_attention_heads', 32)
+    num_key_value_heads = getattr(config, 'num_key_value_heads', num_attention_heads)
+
+    # Embedding parameters
+    embed_params = vocab_size * hidden_size  # input embeddings
+
+    # Per-layer parameters (attention + MLP + layer norms)
+    # Attention: Q, K, V projections + output projection
+    head_dim = hidden_size // num_attention_heads
+    q_params = hidden_size * hidden_size
+    k_params = hidden_size * (num_key_value_heads * head_dim)
+    v_params = hidden_size * (num_key_value_heads * head_dim)
+    o_params = hidden_size * hidden_size
+    attn_params = q_params + k_params + v_params + o_params
+
+    # MLP: gate, up, down projections (for Llama-style)
+    mlp_params = hidden_size * intermediate_size * 3
+
+    # Layer norms (2 per layer)
+    norm_params = hidden_size * 2
+
+    layer_params = attn_params + mlp_params + norm_params
+
+    # Total
+    total_params = embed_params + (layer_params * num_layers) + vocab_size * hidden_size  # + lm_head
+
+    # Check for MoE (Mixture of Experts) - multiplies MLP params
+    num_experts = getattr(config, 'num_local_experts', getattr(config, 'num_experts', None))
+    if num_experts:
+        # MoE models have multiple expert MLPs
+        total_params += mlp_params * (num_experts - 1) * num_layers
+
+    # Model weights + 20% overhead for loading buffers and activations
+    estimated_bytes = int(total_params * bytes_per_param * 1.2)
+
+    return estimated_bytes
+
+
+def get_available_memory(device: str) -> Dict[str, int]:
+    """
+    Get available memory for the specified device.
+
+    Returns dict with 'total', 'available', and 'used' in bytes.
+    """
+    import os
+
+    if device == "cuda" or device.startswith("cuda:"):
+        if torch.cuda.is_available():
+            device_idx = 0
+            if ":" in device:
+                device_idx = int(device.split(":")[1])
+
+            total = torch.cuda.get_device_properties(device_idx).total_memory
+            reserved = torch.cuda.memory_reserved(device_idx)
+            allocated = torch.cuda.memory_allocated(device_idx)
+            available = total - reserved
+
+            return {
+                'total': total,
+                'available': available,
+                'used': allocated,
+                'device_name': torch.cuda.get_device_name(device_idx),
+            }
+
+    # For CPU and MPS, check system RAM
+    # MPS uses unified memory, so system RAM is the constraint
+    try:
+        import psutil
+        mem = psutil.virtual_memory()
+        return {
+            'total': mem.total,
+            'available': mem.available,
+            'used': mem.used,
+            'device_name': 'System RAM' if device == 'cpu' else 'Unified Memory (MPS)',
+        }
+    except ImportError:
+        # Fallback: try to read from system
+        if sys.platform == 'darwin':  # macOS
+            try:
+                import subprocess
+                # Get page size and free pages
+                result = subprocess.run(['vm_stat'], capture_output=True, text=True)
+                lines = result.stdout.split('\n')
+
+                page_size = 16384  # Default for Apple Silicon
+                free_pages = 0
+
+                for line in lines:
+                    if 'page size' in line.lower():
+                        page_size = int(line.split()[-2])
+                    elif 'Pages free' in line:
+                        free_pages = int(line.split()[2].rstrip('.'))
+
+                # Also get total memory
+                result = subprocess.run(['sysctl', 'hw.memsize'], capture_output=True, text=True)
+                total = int(result.stdout.split()[1])
+                available = free_pages * page_size
+
+                return {
+                    'total': total,
+                    'available': available,
+                    'used': total - available,
+                    'device_name': 'Unified Memory (MPS)' if device == 'mps' else 'System RAM',
+                }
+            except Exception:
+                pass
+
+        # Last resort fallback
+        return {
+            'total': 0,
+            'available': 0,
+            'used': 0,
+            'device_name': 'Unknown',
+        }
+
+
+class InsufficientMemoryError(Exception):
+    """Raised when there isn't enough memory to load the model."""
+    def __init__(self, required: int, available: int, device: str):
+        self.required = required
+        self.available = available
+        self.device = device
+        super().__init__(f"Insufficient memory: need {required}, have {available}")
 
 
 # =============================================================================
@@ -227,6 +378,74 @@ class PeakWeightsFinder:
         print(f"  {Colors.DIM}Tip: Verify login with: huggingface-cli whoami{Colors.END}")
         print(f"\n{Colors.YELLOW}{'─'*60}{Colors.END}\n")
 
+    def _print_memory_error(self, estimated: int, available: int, total: int, device: str, device_name: str):
+        """Print helpful message when there isn't enough memory."""
+        shortage = estimated - available
+
+        print(f"{Colors.RED}{'─'*60}{Colors.END}")
+        print(f"{Colors.RED}  Insufficient Memory{Colors.END}")
+        print(f"{Colors.RED}{'─'*60}{Colors.END}")
+        print()
+        print(f"  {Colors.BOLD}{self.model_name}{Colors.END} requires more memory than available.")
+        print()
+        print(f"  {Colors.CYAN}Memory Details:{Colors.END}")
+        print(f"    Required:   ~{format_bytes(estimated)}")
+        print(f"    Available:  {format_bytes(available)}")
+        print(f"    Shortage:   {Colors.RED}{format_bytes(shortage)}{Colors.END}")
+        print()
+
+        # Device-specific suggestions
+        print(f"  {Colors.CYAN}Suggestions:{Colors.END}")
+
+        if device == "mps":
+            print(f"    {Colors.BOLD}1.{Colors.END} Close other applications to free memory")
+            print(f"       (MPS uses unified memory shared with system)")
+            print()
+            print(f"    {Colors.BOLD}2.{Colors.END} Try a smaller model:")
+            print(f"       peakweights HuggingFaceTB/SmolLM2-1.7B")
+            print(f"       peakweights Qwen/Qwen2.5-3B")
+            print()
+            print(f"    {Colors.BOLD}3.{Colors.END} Use CPU instead (slower but uses swap):")
+            print(f"       peakweights {self.model_name} --device cpu")
+            print()
+            if self.dtype == torch.float32:
+                print(f"    {Colors.BOLD}4.{Colors.END} Use float16 to halve memory usage:")
+                print(f"       peakweights {self.model_name} --dtype float16")
+                print()
+
+        elif device == "cpu":
+            print(f"    {Colors.BOLD}1.{Colors.END} Close other applications to free memory")
+            print()
+            print(f"    {Colors.BOLD}2.{Colors.END} Try a smaller model:")
+            print(f"       peakweights HuggingFaceTB/SmolLM2-1.7B")
+            print(f"       peakweights Qwen/Qwen2.5-3B")
+            print()
+            if self.dtype == torch.float32:
+                print(f"    {Colors.BOLD}3.{Colors.END} Use float16 to halve memory usage:")
+                print(f"       peakweights {self.model_name} --dtype float16")
+                print()
+
+        elif device.startswith("cuda"):
+            print(f"    {Colors.BOLD}1.{Colors.END} Use a GPU with more VRAM")
+            print()
+            print(f"    {Colors.BOLD}2.{Colors.END} Try a smaller model:")
+            print(f"       peakweights HuggingFaceTB/SmolLM2-1.7B")
+            print(f"       peakweights Qwen/Qwen2.5-3B")
+            print()
+            print(f"    {Colors.BOLD}3.{Colors.END} Use CPU with system RAM (slower):")
+            print(f"       peakweights {self.model_name} --device cpu")
+            print()
+
+        # Model size reference
+        print(f"  {Colors.CYAN}Typical Model Sizes (float16):{Colors.END}")
+        print(f"    SmolLM2-1.7B    ~3.5 GB")
+        print(f"    Qwen2.5-3B      ~6.5 GB")
+        print(f"    Mistral-7B      ~14 GB")
+        print(f"    Llama-3.1-8B    ~16 GB")
+        print(f"    Qwen2.5-14B     ~28 GB")
+        print()
+        print(f"{Colors.RED}{'─'*60}{Colors.END}\n")
+
     def find(self) -> List[CriticalWeight]:
         """Run the analysis and return critical weights."""
         from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig
@@ -278,7 +497,45 @@ class PeakWeightsFinder:
         print(f"  Top-K:        {self.top_k}")
         print()
 
-        # Step 2: Load model
+        # Step 2: Memory check before loading
+        estimated_mem = estimate_model_memory(config, self.dtype)
+        mem_info = get_available_memory(self.device)
+
+        print(f"{Colors.CYAN}  Memory Requirements{Colors.END}")
+        print(f"  {'─'*40}")
+        print(f"  Estimated:    ~{format_bytes(estimated_mem)}")
+        print(f"  Available:    {format_bytes(mem_info['available'])} / {format_bytes(mem_info['total'])}")
+        print(f"  Device:       {mem_info['device_name']}")
+
+        # Check if we have enough memory (with some margin)
+        # Use 80% threshold since estimate is approximate
+        if mem_info['available'] > 0 and estimated_mem > mem_info['available'] * 0.95:
+            shortage = estimated_mem - mem_info['available']
+            print()
+            self._print_memory_error(
+                estimated=estimated_mem,
+                available=mem_info['available'],
+                total=mem_info['total'],
+                device=self.device,
+                device_name=mem_info['device_name'],
+            )
+            raise InsufficientMemoryError(estimated_mem, mem_info['available'], self.device)
+
+        # Show memory status indicator
+        mem_usage_pct = (estimated_mem / mem_info['available'] * 100) if mem_info['available'] > 0 else 0
+        if mem_usage_pct > 80:
+            status_color = Colors.YELLOW
+            status_text = "Tight fit"
+        elif mem_usage_pct > 50:
+            status_color = Colors.CYAN
+            status_text = "OK"
+        else:
+            status_color = Colors.GREEN
+            status_text = "Plenty"
+        print(f"  Status:       {status_color}{status_text} ({mem_usage_pct:.0f}% of available){Colors.END}")
+        print()
+
+        # Step 3: Load model
         spinner = Spinner("Loading model weights (this may take a while for large models)")
         spinner.start()
 
@@ -286,13 +543,23 @@ class PeakWeightsFinder:
             # On CPU/MPS without enough memory, device_map="auto" may offload to disk
             # which creates meta tensors that can't be used for inference.
             # For non-CUDA devices, we need to load differently to avoid this issue.
-            if self.device in ("cpu", "mps"):
-                # Load with explicit device placement - may fail on large models
-                # but gives a clear error rather than meta tensor issues
+            if self.device == "mps":
+                # MPS has known segfault issues with direct device_map loading.
+                # Load to CPU first, then move to MPS for stability.
                 model = AutoModelForCausalLM.from_pretrained(
                     self.model_name,
                     torch_dtype=self.dtype,
-                    device_map={"": self.device},
+                    device_map="cpu",
+                    low_cpu_mem_usage=True,
+                    trust_remote_code=True,
+                ).eval()
+                spinner.update("Moving model to MPS device")
+                model = model.to("mps")
+            elif self.device == "cpu":
+                model = AutoModelForCausalLM.from_pretrained(
+                    self.model_name,
+                    torch_dtype=self.dtype,
+                    device_map={"": "cpu"},
                     low_cpu_mem_usage=True,
                     trust_remote_code=True,
                 ).eval()
@@ -1058,6 +1325,7 @@ def main():
         """
     )
 
+    parser.add_argument('--version', '-V', action='version', version=f'peakweights {__version__}')
     parser.add_argument("model", help="HuggingFace model ID or local path")
     parser.add_argument("--top_k", "-k", type=int, default=50,
                         help="Number of critical weights to find (default: 50 for 90%+ recovery)")
@@ -1202,6 +1470,9 @@ def main():
             visualize(finder, args.viz_output)
 
     except GatedModelError:
+        # Already printed helpful message, just exit cleanly
+        sys.exit(1)
+    except InsufficientMemoryError:
         # Already printed helpful message, just exit cleanly
         sys.exit(1)
     except KeyboardInterrupt:

@@ -221,6 +221,107 @@ Results download automatically.
 
 ---
 
+## Running on Google Colab
+
+Google Colab provides free GPU access, making it ideal for running PeakWeights on large models. Here's how to get started:
+
+### Quick Start (Copy-Paste Ready)
+
+```python
+# Cell 1: Install PeakWeights
+!pip install peakweights -q
+
+# Cell 2: Run analysis on any model
+!peakweights Qwen/Qwen2.5-7B --top_k 50
+```
+
+### Full Example with Recovery Analysis
+
+```python
+# Cell 1: Install dependencies
+!pip install peakweights -q
+
+# Cell 2: Check GPU
+import torch
+print(f"GPU: {torch.cuda.get_device_name(0)}")
+print(f"Memory: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB")
+
+# Cell 3: Find K for 95% recovery
+!peakweights Qwen/Qwen2.5-7B --recovery 95 --output results.json
+
+# Cell 4: View results
+import json
+with open('results.json') as f:
+    results = json.load(f)
+print(f"K for 95% recovery: {results['k']}")
+print(f"Actual recovery: {results['actual_recovery']:.1%}")
+```
+
+### Python API in Colab
+
+```python
+# Cell 1: Install
+!pip install peakweights -q
+
+# Cell 2: Use Python API
+from peakweights import find, calibrate
+
+# Find critical weights
+critical = find("Qwen/Qwen2.5-7B", k=50, device="cuda")
+
+# Print top 5
+for w in critical[:5]:
+    print(f"Score: {w['score']:.2f} | {w['module']}[{w['index']}]")
+```
+
+### Recommended GPU Tiers
+
+| Model Size | Recommended GPU | Colab Tier |
+|------------|-----------------|------------|
+| <3B params | T4 (16GB) | Free |
+| 7-8B params | A100 (40GB) | Colab Pro |
+| 13-14B params | A100 (80GB) | Colab Pro+ |
+| 70B+ params | Multiple GPUs | Enterprise |
+
+### Saving Results to Google Drive
+
+```python
+# Mount Google Drive
+from google.colab import drive
+drive.mount('/content/drive')
+
+# Run analysis and save to Drive
+!peakweights Qwen/Qwen2.5-7B --recovery 95 \
+    --output /content/drive/MyDrive/peakweights_results.json \
+    --mask /content/drive/MyDrive/protect_mask.pt
+```
+
+### Troubleshooting Colab
+
+**Out of Memory:**
+```python
+# Clear GPU memory before running
+import torch
+torch.cuda.empty_cache()
+
+# Or restart runtime: Runtime → Restart runtime
+```
+
+**Session Timeout:**
+```python
+# Keep session alive (run in separate cell)
+import time
+while True:
+    time.sleep(60)
+```
+
+**Check Available Memory:**
+```python
+!nvidia-smi
+```
+
+---
+
 ## Comparison with Existing Methods
 
 | Method | Data Required | Passes | Quality Recovery |

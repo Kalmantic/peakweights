@@ -21,7 +21,7 @@ else:
 
 setup(
     name="peakweights",
-    version="0.1.0",
+    version="0.3.0",
     author="Thiyagarajan Maruthavanan, Vamshi Ambati",
     author_email="thiyagarajan@kalmantic.com",
     description="One-pass, data-free discovery of critical LLM parameters",
