@@ -128,6 +128,17 @@ def format_bytes(n: int) -> str:
 
 
 # =============================================================================
+# Custom Exceptions
+# =============================================================================
+
+class GatedModelError(Exception):
+    """Raised when trying to access a gated HuggingFace model without authorization."""
+    def __init__(self, model_name: str):
+        self.model_name = model_name
+        super().__init__(f"Access denied for gated model: {model_name}")
+
+
+# =============================================================================
 # Data Classes
 # =============================================================================
 
@@ -199,6 +210,23 @@ class PeakWeightsFinder:
         if self.verbose:
             print(msg)
 
+    def _print_gated_model_help(self):
+        """Print helpful instructions for accessing gated models."""
+        print(f"\n{Colors.YELLOW}{'─'*60}{Colors.END}")
+        print(f"{Colors.YELLOW}  This is a gated model{Colors.END}")
+        print(f"{Colors.YELLOW}{'─'*60}{Colors.END}")
+        print(f"\n  {Colors.BOLD}{self.model_name}{Colors.END} requires you to accept the license")
+        print(f"  agreement before downloading.\n")
+        print(f"  {Colors.CYAN}Steps to get access:{Colors.END}\n")
+        print(f"  1. Visit the model page and request access:")
+        print(f"     {Colors.BOLD}https://huggingface.co/{self.model_name}{Colors.END}\n")
+        print(f"  2. Log in to Hugging Face CLI:")
+        print(f"     {Colors.BOLD}huggingface-cli login{Colors.END}\n")
+        print(f"  3. Get your token from:")
+        print(f"     https://huggingface.co/settings/tokens\n")
+        print(f"  {Colors.DIM}Tip: Verify login with: huggingface-cli whoami{Colors.END}")
+        print(f"\n{Colors.YELLOW}{'─'*60}{Colors.END}\n")
+
     def find(self) -> List[CriticalWeight]:
         """Run the analysis and return critical weights."""
         from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig
@@ -217,8 +245,16 @@ class PeakWeightsFinder:
             config = AutoConfig.from_pretrained(self.model_name, trust_remote_code=True)
             spinner.succeed("Model config loaded")
         except Exception as e:
-            spinner.fail(f"Failed to load config: {e}")
-            raise
+            error_str = str(e).lower()
+            is_gated = 'gated' in error_str or '403' in error_str or 'access' in error_str
+
+            if is_gated:
+                spinner.fail(f"Access denied - gated model")
+                self._print_gated_model_help()
+                raise GatedModelError(self.model_name) from e
+            else:
+                spinner.fail(f"Failed to load config: {e}")
+                raise
 
         # Display model info
         print(f"\n{Colors.CYAN}  Model Information{Colors.END}")
@@ -285,8 +321,16 @@ class PeakWeightsFinder:
 
             spinner.succeed("Model loaded successfully")
         except Exception as e:
-            spinner.fail(f"Failed to load model: {e}")
-            raise
+            error_str = str(e).lower()
+            is_gated = 'gated' in error_str or '403' in error_str or 'access' in error_str
+
+            if is_gated:
+                spinner.fail(f"Access denied - gated model")
+                self._print_gated_model_help()
+                raise GatedModelError(self.model_name) from e
+            else:
+                spinner.fail(f"Failed to load model: {e}")
+                raise
 
         # Count parameters and estimate size
         self.total_params = sum(p.numel() for p in model.parameters())
@@ -1061,100 +1105,108 @@ def main():
         "float32": torch.float32,
     }
 
-    # Run calibration if requested
-    if args.calibrate:
-        result = calibrate(
+    try:
+        # Run calibration if requested
+        if args.calibrate:
+            result = calibrate(
+                args.model,
+                k_values=[10, 20, 50, 100],
+                device=device,
+                dtype=dtype_map[args.dtype],
+                verbose=not args.quiet,
+            )
+
+            if args.output:
+                with open(args.output, 'w') as f:
+                    # Convert to JSON-serializable format
+                    output = {
+                        'model': args.model,
+                        'recommended_k': result['recommended_k'],
+                        'power_law_exponent': result['power_law_exponent'],
+                        'cumulative_importance': {str(k): v for k, v in result['cumulative_importance'].items()},
+                        'weights': result['weights'][:result['recommended_k']],
+                    }
+                    json.dump(output, f, indent=2)
+                print(f"{Colors.GREEN}✓{Colors.END} Saved calibration results to {args.output}")
+            return
+
+        # Run recovery-based analysis if requested
+        if args.recovery is not None:
+            target = args.recovery / 100.0  # Convert 95 -> 0.95
+            result = find_k_for_recovery(
+                args.model,
+                target_recovery=target,
+                max_k=args.max_k,
+                device=device,
+                dtype=dtype_map[args.dtype],
+                verbose=not args.quiet,
+            )
+
+            # Show quantization guide if requested
+            if args.show_quant:
+                print(f"\n{Colors.BOLD}{'─'*60}{Colors.END}")
+                print(f"{Colors.BOLD}  QUANTIZATION INTEGRATION GUIDE{Colors.END}")
+                print(f"{Colors.BOLD}{'─'*60}{Colors.END}\n")
+
+                print(f"  {Colors.CYAN}Summary:{Colors.END} {result['quantization_guide']['summary']}")
+
+                for framework in ['bitsandbytes', 'autoawq', 'gptq', 'manual']:
+                    print(f"\n  {Colors.BOLD}━━━ {framework.upper()} ━━━{Colors.END}")
+                    print(f"{Colors.DIM}{result['quantization_guide'][framework]}{Colors.END}")
+
+                print()
+
+            if args.output:
+                with open(args.output, 'w') as f:
+                    output = {
+                        'model': args.model,
+                        'target_recovery': args.recovery,
+                        'k': result['k'],
+                        'actual_recovery': result['actual_recovery'],
+                        'weights': result['weights'],
+                        'quantization_guide': result['quantization_guide'],
+                    }
+                    json.dump(output, f, indent=2)
+                print(f"{Colors.GREEN}✓{Colors.END} Saved results to {args.output}")
+
+            if args.mask:
+                generate_protection_mask(result['weights'], args.mask)
+
+            return
+
+        # Run analysis
+        finder = PeakWeightsFinder(
             args.model,
-            k_values=[10, 20, 50, 100],
+            top_k=args.top_k,
             device=device,
             dtype=dtype_map[args.dtype],
             verbose=not args.quiet,
         )
 
+        results = finder.find()
+
+        # Display results
+        if not args.quiet:
+            print_results(results, args.model, finder.total_params)
+
+        # Save outputs
         if args.output:
             with open(args.output, 'w') as f:
-                # Convert to JSON-serializable format
-                output = {
-                    'model': args.model,
-                    'recommended_k': result['recommended_k'],
-                    'power_law_exponent': result['power_law_exponent'],
-                    'cumulative_importance': {str(k): v for k, v in result['cumulative_importance'].items()},
-                    'weights': result['weights'][:result['recommended_k']],
-                }
-                json.dump(output, f, indent=2)
-            print(f"{Colors.GREEN}✓{Colors.END} Saved calibration results to {args.output}")
-        return
-
-    # Run recovery-based analysis if requested
-    if args.recovery is not None:
-        target = args.recovery / 100.0  # Convert 95 -> 0.95
-        result = find_k_for_recovery(
-            args.model,
-            target_recovery=target,
-            max_k=args.max_k,
-            device=device,
-            dtype=dtype_map[args.dtype],
-            verbose=not args.quiet,
-        )
-
-        # Show quantization guide if requested
-        if args.show_quant:
-            print(f"\n{Colors.BOLD}{'─'*60}{Colors.END}")
-            print(f"{Colors.BOLD}  QUANTIZATION INTEGRATION GUIDE{Colors.END}")
-            print(f"{Colors.BOLD}{'─'*60}{Colors.END}\n")
-
-            print(f"  {Colors.CYAN}Summary:{Colors.END} {result['quantization_guide']['summary']}")
-
-            for framework in ['bitsandbytes', 'autoawq', 'gptq', 'manual']:
-                print(f"\n  {Colors.BOLD}━━━ {framework.upper()} ━━━{Colors.END}")
-                print(f"{Colors.DIM}{result['quantization_guide'][framework]}{Colors.END}")
-
-            print()
-
-        if args.output:
-            with open(args.output, 'w') as f:
-                output = {
-                    'model': args.model,
-                    'target_recovery': args.recovery,
-                    'k': result['k'],
-                    'actual_recovery': result['actual_recovery'],
-                    'weights': result['weights'],
-                    'quantization_guide': result['quantization_guide'],
-                }
-                json.dump(output, f, indent=2)
+                json.dump([r.to_dict() for r in results], f, indent=2)
             print(f"{Colors.GREEN}✓{Colors.END} Saved results to {args.output}")
 
         if args.mask:
-            generate_protection_mask(result['weights'], args.mask)
+            generate_protection_mask([r.to_dict() for r in results], args.mask)
 
-        return
+        if args.viz or args.viz_output:
+            visualize(finder, args.viz_output)
 
-    # Run analysis
-    finder = PeakWeightsFinder(
-        args.model,
-        top_k=args.top_k,
-        device=device,
-        dtype=dtype_map[args.dtype],
-        verbose=not args.quiet,
-    )
-
-    results = finder.find()
-
-    # Display results
-    if not args.quiet:
-        print_results(results, args.model, finder.total_params)
-
-    # Save outputs
-    if args.output:
-        with open(args.output, 'w') as f:
-            json.dump([r.to_dict() for r in results], f, indent=2)
-        print(f"{Colors.GREEN}✓{Colors.END} Saved results to {args.output}")
-
-    if args.mask:
-        generate_protection_mask([r.to_dict() for r in results], args.mask)
-
-    if args.viz or args.viz_output:
-        visualize(finder, args.viz_output)
+    except GatedModelError:
+        # Already printed helpful message, just exit cleanly
+        sys.exit(1)
+    except KeyboardInterrupt:
+        print(f"\n{Colors.YELLOW}Interrupted by user{Colors.END}")
+        sys.exit(130)
 
 
 if __name__ == "__main__":
