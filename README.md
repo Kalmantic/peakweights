@@ -13,6 +13,44 @@ peakweights Qwen/Qwen2.5-7B --top_k 50
 
 ---
 
+## Prerequisites
+
+### Hugging Face Authentication
+
+Many popular models (Llama, Mistral, Gemma, etc.) are **gated** and require authentication. Before using PeakWeights with these models, you must:
+
+1. **Create a Hugging Face account** at [huggingface.co](https://huggingface.co/join)
+
+2. **Request access** to the model you want to analyze:
+   - Visit the model page (e.g., [meta-llama/Llama-3.1-8B](https://huggingface.co/meta-llama/Llama-3.1-8B))
+   - Click "Request access" and accept the license agreement
+   - Wait for approval (usually instant for most models)
+
+3. **Create an access token**:
+   - Go to [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)
+   - Click "New token" and create a token with `read` permissions
+
+4. **Login via CLI**:
+   ```bash
+   pip install huggingface_hub
+   huggingface-cli login
+   ```
+   Paste your token when prompted.
+
+**Alternative: Environment Variable**
+```bash
+export HF_TOKEN=your_token_here
+```
+
+**Verify login status:**
+```bash
+huggingface-cli whoami
+```
+
+> **Note:** Some models like `Qwen/Qwen2.5-7B` are open and don't require authentication.
+
+---
+
 ## The Insight
 
 Not all weights are created equal. In a 70-billion parameter model, a tiny fraction—often fewer than 50 weights—carry disproportionate importance. Remove them and the model collapses. Protect them during quantization and you recover 95% of lost quality.
@@ -138,6 +176,8 @@ peakweights Qwen/Qwen2.5-7B --recovery 95
 # Save protection mask
 peakweights Qwen/Qwen2.5-7B --mask protect.pt
 ```
+
+> **Note:** If you try to access a gated model without authentication, PeakWeights will display clear instructions on how to get access instead of a cryptic error.
 
 ### Quantization Integration
 
