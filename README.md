@@ -8,8 +8,26 @@ One-pass, data-free discovery of critical LLM parameters.
 
 ```bash
 pip install peakweights
-peakweights Qwen/Qwen2.5-7B --top_k 50
+peakweights Qwen/Qwen2.5-7B --top_k 50 --output weights.pwi
 ```
+
+**Pre-computed weights available:** [peakweights.com/models](https://peakweights.com/models)
+
+---
+
+## Pre-computed Weights
+
+Skip the analysis step - download pre-computed `.pwi` files for popular models:
+
+| Model | Recovery | Download |
+|-------|----------|----------|
+| Qwen2.5-7B | 99% | [qwen2.5-7b.pwi](https://raw.githubusercontent.com/Kalmantic/peakweights/main/data/analyzed/qwen2.5-7b.pwi) |
+| SmolLM2-1.7B | 99% | [smollm2-1.7b.pwi](https://raw.githubusercontent.com/Kalmantic/peakweights/main/data/analyzed/smollm2-1.7b.pwi) |
+| Phi-3-mini | 97% | [phi-3-mini.pwi](https://raw.githubusercontent.com/Kalmantic/peakweights/main/data/analyzed/phi-3-mini.pwi) |
+| DeepSeek-R1-7B | 93% | [deepseek-r1-7b.pwi](https://raw.githubusercontent.com/Kalmantic/peakweights/main/data/analyzed/deepseek-r1-7b.pwi) |
+| Mistral-7B | 61% | [mistral-7b.pwi](https://raw.githubusercontent.com/Kalmantic/peakweights/main/data/analyzed/mistral-7b.pwi) |
+
+Browse all models at [peakweights.com/models](https://peakweights.com/models)
 
 ---
 
@@ -155,27 +173,68 @@ Tested on 4 architectures (SmolLM2-1.7B, Qwen2.5-7B, DeepSeek-R1-7B, Mistral-7B)
 ### Python API
 
 ```python
-from peakweights import find
+from peakweights import find, save, load
 
 # Find top-K critical weights
 critical = find("Qwen/Qwen2.5-7B", k=50)
 
 for w in critical:
     print(f"Score: {w.score:.2f} | {w.module}[{w.row}, {w.col}]")
+
+# Save to .pwi format
+save(critical, "weights.pwi", model_name="Qwen/Qwen2.5-7B")
+
+# Load pre-computed weights
+weights = load("weights.pwi")
 ```
 
 ### CLI
 
 ```bash
-# Basic usage
+# Basic usage - outputs to console
 peakweights Qwen/Qwen2.5-7B --top_k 50
+
+# Save to .pwi format (recommended)
+peakweights Qwen/Qwen2.5-7B --top_k 50 --output weights.pwi
+
+# Other output formats
+peakweights Qwen/Qwen2.5-7B --output weights.csv   # Spreadsheet
+peakweights Qwen/Qwen2.5-7B --output weights.pt    # PyTorch mask
 
 # Find K for target recovery
 peakweights Qwen/Qwen2.5-7B --recovery 95
-
-# Save protection mask
-peakweights Qwen/Qwen2.5-7B --mask protect.pt
 ```
+
+### The .pwi Format
+
+PeakWeights Index (`.pwi`) is a JSON format for storing critical weight data:
+
+```json
+{
+  "peakweights": "1.0",
+  "model": "Qwen/Qwen2.5-7B",
+  "k": 50,
+  "total_params": "7.0B",
+  "weights": [
+    {"rank": 1, "score": 4596.0, "module": "model.layers.26.mlp.down_proj", "position": [458, 5891]},
+    ...
+  ],
+  "summary": {
+    "by_type": {"mlp": 48, "attention": 2},
+    "layer_range": [3, 27]
+  },
+  "metrics": {
+    "fp16_ppl": 10.62,
+    "int4_ppl": 11.51,
+    "recovery_at_50": 99.0
+  }
+}
+```
+
+**Benefits:**
+- Human-readable JSON (grep, jq friendly)
+- Web-ready (fetch and use in browser)
+- Contains metrics for verification
 
 > **Note:** If you try to access a gated model without authentication, PeakWeights will display clear instructions on how to get access instead of a cryptic error.
 
@@ -184,14 +243,19 @@ peakweights Qwen/Qwen2.5-7B --mask protect.pt
 Protect critical weights during 4-bit quantization with bitsandbytes:
 
 ```python
-from peakweights import find
+from peakweights import load, get_skip_modules
 from transformers import AutoModelForCausalLM, BitsAndBytesConfig
+import torch
 
-# Find critical weights
-critical = find("Qwen/Qwen2.5-7B", k=50)
+# Option 1: Load pre-computed weights (recommended)
+weights = load("qwen2.5-7b.pwi")
+
+# Option 2: Or compute them fresh
+# from peakweights import find
+# weights = find("Qwen/Qwen2.5-7B", k=50)
 
 # Get modules to skip during quantization
-skip_modules = list(set(w.module for w in critical[:10]))
+skip_modules = get_skip_modules(weights, top_n=5)
 
 # Load with protection
 config = BitsAndBytesConfig(
