@@ -7,7 +7,7 @@ dist/
 # Results (but keep final)
 results/
 
-# LaTeX/Paper (will link from arxiv)
+# LaTeX build artifacts
 *.aux
 *.log
 *.out
@@ -15,8 +15,8 @@ results/
 *.synctex.gz
 *.bbl
 *.blg
-*.tex
-*.pdf
+
+# Paper source (keep docs/ for GitHub Pages)
 paper/
 
 # Internal documentation

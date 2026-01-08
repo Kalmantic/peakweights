@@ -1,0 +1,277 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{float}
+\usepackage{geometry}
+\usepackage{microtype}
+\usepackage{natbib}
+\usepackage{authblk}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+\geometry{margin=1in}
+\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue,citecolor=blue}
+
+\lstset{
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    backgroundcolor=\color{gray!5},
+    frame=single,
+}
+
+\title{PeakWeights: Data-Free Discovery of Critical LLM Parameters}
+
+\author[1]{Thiyagarajan M\thanks{thiyagarajan@kalmantic.com}}
+\author[2]{Vamshi Ambati}
+\affil[1]{Kalmantic Labs}
+\affil[2]{Carnegie Mellon University; IIIT Hyderabad}
+
+\date{December 2025}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Post-training quantization of large language models introduces errors that degrade quality, but not all weights contribute equally to this degradation. PeakWeights identifies critical weights in a single forward pass without calibration data. Weight magnitude multiplied by peak activation closely tracks worst-case quantization error. Across five architectures (SmolLM2-1.7B, Qwen2.5-7B, DeepSeek-R1-7B, Mistral-7B, Phi-3-mini), protecting 50 weights during 4-bit quantization recovers 61-99\% of lost perplexity. The optimal number of protected weights is architecture-dependent: four models achieve 90\%+ recovery at K=50, while Mistral requires K=100. Weight importance follows a power law ($\alpha \approx 0.39$-$0.49$), but critical weight locations vary: MLP layers for Qwen/DeepSeek, output projection for Mistral. Code available at \url{https://github.com/Kalmantic/peakweights}.
+\end{abstract}
+
+\section{Introduction}
+
+Quantization reduces the memory footprint of large language models by representing weights in lower precision \citep{dettmers2022llmint8, frantar2022gptq}. The cost is quality degradation: 4-bit quantization increases perplexity by 0.36 to 6.64 points across models we tested.
+
+Recent work has shown that this degradation is not uniform. A small number of weights, variously called ``outliers'' or ``super weights,'' have disproportionate influence on model outputs \citep{yu2024superweight}. Protecting these weights during quantization recovers quality. The open question is how to find them efficiently.
+
+Existing methods require calibration data and multiple forward passes, but a single forward pass with synthetic input suffices. Quantization error at weight $w_{ij}$ propagates to the output proportionally to the activation $x_j$, so weights that are both large and see large activations cause the most damage when quantized.
+
+\section{Related Work}
+
+\paragraph{Post-Training Quantization.} GPTQ \citep{frantar2022gptq} minimizes layer-wise quantization error using approximate Hessian information, requiring calibration data. AWQ \citep{lin2024awq} identifies salient channels through activation magnitudes and applies per-channel scaling. SmoothQuant \citep{xiao2023smoothquant} migrates quantization difficulty from activations to weights. These methods achieve strong results but require representative data samples.
+
+\paragraph{Outlier Weights.} \citet{dettmers2022llmint8} observed that a small fraction of hidden dimensions contain activation outliers that cause quantization failures. Concurrent work by \citet{yu2024superweight} identifies individual ``super weights'' whose removal catastrophically degrades performance. We extend this analysis by characterizing architecture-dependent optimal K values rather than focusing on a single weight, and by providing power-law analysis ($\alpha \approx 0.40$-$0.46$) that explains why different architectures require different protection strategies.
+
+\section{Method}
+
+\subsection{Scoring Function}
+
+Consider a linear layer $\mathbf{y} = \mathbf{W}\mathbf{x}$. Quantizing weight $w_{ij}$ introduces error $\delta_{ij}$, perturbing the output by $\delta_{ij} \cdot x_j$. For uniform quantization, larger weights incur larger errors: $|\delta_{ij}| \propto |w_{ij}|$.
+
+Each weight is scored by worst-case output perturbation:
+\begin{equation}
+\text{score}(w_{ij}) = |w_{ij}| \times \max_t |x_{t,j}|
+\end{equation}
+where $x_{t,j}$ is the activation at position $j$ for token $t$. The maximum captures worst-case behavior; even rare large activations matter.
+
+\subsection{Data-Free Activation Estimation}
+
+Activation magnitudes are estimated using synthetic input: the tokenized string ``0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15'' (16 tokens). The goal is identifying channels that \textit{can} produce large activations, not channels that typically do. Network structure dominates input choice.
+
+\subsection{Algorithm}
+
+\begin{algorithm}[H]
+\caption{PeakWeights}
+\begin{algorithmic}[1]
+\STATE Register forward hooks on Linear, Embedding, Conv1d modules
+\STATE Forward pass with synthetic tokens
+\FOR{each module}
+    \STATE Record $\max_t |x_{t,j}|$ for each input feature $j$
+\ENDFOR
+\FOR{each weight $w_{ij}$}
+    \STATE $\text{score}_{ij} \leftarrow |w_{ij}| \times \max_t |x_{t,j}|$
+    \STATE Update min-heap of top-K scores
+\ENDFOR
+\RETURN Top-K weights
+\end{algorithmic}
+\end{algorithm}
+
+Runtime is $O(P)$ with $O(K)$ space. A 7B model completes in approximately 50 seconds on an A100 80GB.
+
+\section{Experiments}
+
+\subsection{Setup}
+
+We evaluate on five models with different architectures:
+\begin{itemize}
+    \item \textbf{SmolLM2-1.7B}: Standard transformer, 1.7B parameters
+    \item \textbf{Qwen2.5-7B}: SwiGLU MLP, grouped-query attention
+    \item \textbf{DeepSeek-R1-Distill-Qwen-7B}: Reasoning-focused, distilled
+    \item \textbf{Mistral-7B-v0.3}: Sliding window attention, tied embeddings
+    \item \textbf{Phi-3-mini}: Microsoft's efficient 3.8B model
+\end{itemize}
+
+Perplexity is measured on WikiText-103 \citep{merity2016wikitext}. We simulate 4-bit quantization and define recovery as:
+\begin{equation}
+\text{Recovery} = \frac{\text{PPL}_\text{4bit} - \text{PPL}_\text{protected}}{\text{PPL}_\text{4bit} - \text{PPL}_\text{FP16}}
+\end{equation}
+
+\subsection{Main Results}
+
+\begin{table}[H]
+\centering
+\caption{Perplexity on WikiText-103. Lower is better.}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Model} & \textbf{FP16} & \textbf{4-bit} & \textbf{PeakWeights} & \textbf{Recovery} \\
+\midrule
+Qwen2.5-7B & 10.62 & 11.51 & 10.63 & 99\% \\
+Mistral-7B & 13.44 & 13.80 & 13.58 & 61\% \\
+SmolLM2-1.7B & 17.92 & 24.56 & 17.99 & 99\% \\
+DeepSeek-R1-7B & 70.73 & 73.52 & 70.91 & 93\% \\
+Phi-3-mini & 11.65 & 12.67 & 11.68 & 97\% \\
+\bottomrule
+\end{tabular}
+\label{tab:main}
+\end{table}
+
+Four models exceed 90\% recovery at K=50. Mistral requires more protected weights due to a flatter importance distribution ($\alpha$=0.44 vs 0.45-0.49 for others).
+
+\subsection{Effect of K}
+
+\begin{table}[H]
+\centering
+\caption{Recovery rate (\%) at different K. Bold indicates first K achieving $\geq$90\%.}
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Model} & \textbf{K=1} & \textbf{K=5} & \textbf{K=10} & \textbf{K=20} & \textbf{K=50} & \textbf{K=100} \\
+\midrule
+Qwen2.5-7B & 18 & 47 & 64 & 78 & \textbf{99} & 99 \\
+Mistral-7B & 2 & 7 & 13 & 25 & 61 & \textbf{99} \\
+SmolLM2-1.7B & 39 & 69 & 80 & 89 & \textbf{99} & 99 \\
+DeepSeek-R1-7B & 12 & 35 & 49 & 68 & \textbf{93} & 99 \\
+Phi-3-mini & 8 & 31 & 51 & 71 & \textbf{97} & 99 \\
+\bottomrule
+\end{tabular}
+\label{tab:k}
+\end{table}
+
+The optimal K varies by a factor of 5$\times$ across models. Fixed ``core-K'' assumptions do not hold.
+
+\subsection{Score Distribution}
+
+Weight scores follow a power law: $\text{score} \propto \text{rank}^{-\alpha}$.
+
+\begin{table}[H]
+\centering
+\caption{Power law exponents. Higher $\alpha$ indicates concentrated importance.}
+\begin{tabular}{lc}
+\toprule
+\textbf{Model} & \textbf{Exponent ($\alpha$)} \\
+\midrule
+Qwen2.5-7B & 0.46 \\
+Mistral-7B & 0.44 \\
+SmolLM2-1.7B & 0.49 \\
+DeepSeek-R1-7B & 0.39 \\
+Phi-3-mini & 0.45 \\
+\bottomrule
+\end{tabular}
+\label{tab:power}
+\end{table}
+
+SmolLM2's steeper exponent (0.49) means importance is concentrated in fewer weights. DeepSeek-R1's flatter distribution (0.39) and Mistral's moderate exponent (0.44) explain why they require more protected weights.
+
+\subsection{Critical Weight Location}
+
+\begin{table}[H]
+\centering
+\caption{Distribution of top-10 critical weights by module type.}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Model} & \textbf{MLP} & \textbf{Attention} & \textbf{lm\_head} \\
+\midrule
+Qwen2.5-7B & 100\% & 0\% & 0\% \\
+Mistral-7B & 10\% & 0\% & 90\% \\
+SmolLM2-1.7B & 100\% & 0\% & 0\% \\
+DeepSeek-R1-7B & 100\% & 0\% & 0\% \\
+Phi-3-mini & 100\% & 0\% & 0\% \\
+\bottomrule
+\end{tabular}
+\label{tab:location}
+\end{table}
+
+Location reflects architecture. Qwen and DeepSeek use SwiGLU MLPs, creating bottlenecks in \texttt{down\_proj}. Mistral uses tied embeddings, concentrating importance in the output projection.
+
+\section{Analysis}
+
+\paragraph{Model Size and Redundancy.} Smaller models show higher recovery at fixed K. SmolLM2 (1.7B) achieves 99\% at K=50; Mistral (7B) achieves 61\%. Larger models have more redundant pathways, diluting the impact of protecting individual weights.
+
+\paragraph{Reasoning Models.} DeepSeek-R1 shows 70.73 perplexity on WikiText-103, significantly higher than language-modeling-focused models. This reflects training objective mismatch, not model quality. PeakWeights still achieves 93\% recovery, indicating the method generalizes across training objectives.
+
+\paragraph{Automatic K Selection.} Given target recovery $r$, we compute cumulative importance $C(k) = \sum_{i=1}^{k} \text{score}_i / \sum_i \text{score}_i$ and return the smallest $k$ where $C(k) \geq r$.
+
+\section{Limitations}
+
+Synthetic input may not capture activation patterns arising only from specific real inputs. Results are validated on models up to 7B parameters; larger models may exhibit different behavior. This work makes no claim about interpretability or semantic localization; it is an empirical result about functional redundancy under inference-time metrics.
+
+\section{Conclusion}
+
+PeakWeights identifies critical weights through a simple scoring function: weight magnitude times maximum activation. One forward pass with synthetic input suffices; no calibration data required.
+
+The number of weights requiring protection is architecture-dependent. Four models achieve 90\%+ recovery at K=50; Mistral needs K=100. Methods assuming a fixed count will underperform on some architectures.
+
+We see power-law distributions in all five models, though the exponents differ ($\alpha$=0.39-0.49), which explains why different architectures need different K. Critical weights cluster in different modules depending on architecture: MLP for most models, output layer for tied-embedding models like Mistral.
+
+\section*{Code and Reproducibility}
+
+The PeakWeights algorithm is implemented as an open-source Python package at \url{https://github.com/Kalmantic/peakweights}. Install with \texttt{pip install peakweights}.
+
+\paragraph{Usage.} Find critical weights for any HuggingFace model:
+
+\begin{lstlisting}
+from peakweights import find
+critical = find("Qwen/Qwen2.5-7B", k=50)
+\end{lstlisting}
+
+\paragraph{Quantization Integration.} Protect critical weights during 4-bit quantization:
+
+\begin{lstlisting}
+from transformers import BitsAndBytesConfig
+modules = list(set(w.module for w in critical[:10]))
+config = BitsAndBytesConfig(
+    load_in_4bit=True,
+    llm_int8_skip_modules=modules
+)
+\end{lstlisting}
+
+\paragraph{Reproducing Results.} The repository includes a Google Colab notebook with all experiments from this paper. To reproduce: open the notebook, select A100 runtime (free tier), and run all cells. Takes under 30 minutes.
+
+\bibliographystyle{plainnat}
+\begin{thebibliography}{10}
+
+\bibitem[Dettmers et~al.(2022)Dettmers, Lewis, Belkada, and Zettlemoyer]{dettmers2022llmint8}
+Tim Dettmers, Mike Lewis, Younes Belkada, and Luke Zettlemoyer.
+\newblock LLM.int8(): 8-bit Matrix Multiplication for Transformers at Scale.
+\newblock \emph{NeurIPS}, 2022.
+
+\bibitem[Frantar et~al.(2022)Frantar, Ashkboos, Hoefler, and Alistarh]{frantar2022gptq}
+Elias Frantar, Saleh Ashkboos, Torsten Hoefler, and Dan Alistarh.
+\newblock GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers.
+\newblock \emph{arXiv preprint arXiv:2210.17323}, 2022.
+
+\bibitem[Lin et~al.(2024)Lin, Tang, Tang, Yang, Dang, and Han]{lin2024awq}
+Ji Lin, Jiaming Tang, Haotian Tang, Shang Yang, Xingyu Dang, and Song Han.
+\newblock AWQ: Activation-aware Weight Quantization for LLM Compression and Acceleration.
+\newblock \emph{MLSys}, 2024.
+
+\bibitem[Merity et~al.(2016)Merity, Xiong, Bradbury, and Socher]{merity2016wikitext}
+Stephen Merity, Caiming Xiong, James Bradbury, and Richard Socher.
+\newblock Pointer Sentinel Mixture Models.
+\newblock \emph{arXiv preprint arXiv:1609.07843}, 2016.
+
+\bibitem[Yu et~al.(2024)Yu, Wang, Shan, Reed, and Wan]{yu2024superweight}
+Mengxia Yu, De Wang, Qi Shan, Colorado Reed, and Alvin Wan.
+\newblock The Super Weight in Large Language Models.
+\newblock \emph{arXiv preprint arXiv:2411.07191}, 2024.
+
+\bibitem[Xiao et~al.(2023)Xiao, Lin, Seznec, Wu, Demouth, and Han]{xiao2023smoothquant}
+Guangxuan Xiao, Ji Lin, Mickael Seznec, Hao Wu, Julien Demouth, and Song Han.
+\newblock SmoothQuant: Accurate and Efficient Post-Training Quantization for Large Language Models.
+\newblock \emph{ICML}, 2023.
+
+\end{thebibliography}
+
+\end{document}

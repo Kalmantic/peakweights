@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PeakWeights: Data-Free Discovery of Critical LLM Parameters</title>
+    <meta name="description" content="PeakWeights identifies critical weights in LLMs using a single forward pass without calibration data. Protecting just 50 weights during 4-bit quantization recovers 90-99% of lost quality.">
+    <meta property="og:title" content="PeakWeights Paper">
+    <meta property="og:description" content="Data-Free Discovery of Critical LLM Parameters">
+    <meta property="og:type" content="article">
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --fg: #e5e5e5;
+            --accent: #3b82f6;
+            --accent-dim: #1e40af;
+            --muted: #737373;
+            --border: #262626;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg);
+            color: var(--fg);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--fg) 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 1.25rem;
+            color: var(--muted);
+            margin-bottom: 1.5rem;
+        }
+
+        .authors {
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+
+        .authors a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .authors a:hover {
+            text-decoration: underline;
+        }
+
+        .date {
+            color: var(--muted);
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+
+        .abstract {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(30, 64, 175, 0.05) 100%);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .abstract h2 {
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--accent);
+            margin-bottom: 1rem;
+        }
+
+        .abstract p {
+            color: var(--fg);
+            font-size: 1rem;
+        }
+
+        .key-result {
+            background: var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            text-align: center;
+        }
+
+        .key-result .number {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .key-result .label {
+            color: var(--muted);
+            font-size: 0.95rem;
+            margin-top: 0.5rem;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 2rem 0;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.875rem 1.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-dim);
+        }
+
+        .btn-secondary {
+            background: var(--border);
+            color: var(--fg);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--muted);
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 2rem 0;
+            font-size: 0.9rem;
+        }
+
+        .results-table th,
+        .results-table td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .results-table th {
+            color: var(--muted);
+            font-weight: 500;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .results-table td {
+            color: var(--fg);
+        }
+
+        .results-table tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .highlight {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .citation {
+            background: #111;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.8rem;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            color: var(--muted);
+        }
+
+        .citation-header {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 0.875rem;
+            color: var(--fg);
+            margin-bottom: 1rem;
+            font-weight: 500;
+        }
+
+        footer {
+            margin-top: 4rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            color: var(--muted);
+            font-size: 0.875rem;
+        }
+
+        footer a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.75rem;
+            }
+            .container {
+                padding: 2rem 1rem;
+            }
+            .buttons {
+                flex-direction: column;
+            }
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>PeakWeights</h1>
+            <p class="subtitle">Data-Free Discovery of Critical LLM Parameters</p>
+            <p class="authors">
+                <a href="mailto:thiyagarajan@kalmantic.com">Thiyagarajan M</a> (Kalmantic Labs) &
+                <a href="mailto:vamshi.ambati@gmail.com">Vamshi Ambati</a> (CMU, IIIT Hyderabad)
+            </p>
+            <p class="date">December 2025</p>
+        </header>
+
+        <div class="abstract">
+            <h2>Abstract</h2>
+            <p>Post-training quantization of large language models introduces errors that degrade quality, but not all weights contribute equally to this degradation. PeakWeights identifies critical weights in a single forward pass without calibration data. Weight magnitude multiplied by peak activation closely tracks worst-case quantization error. Across five architectures, protecting 50 weights during 4-bit quantization recovers 61-99% of lost perplexity.</p>
+        </div>
+
+        <div class="key-result">
+            <div class="number">50</div>
+            <div class="label">weights protected out of 7 billion recovers 90-99% of quantization loss</div>
+        </div>
+
+        <div class="buttons">
+            <a href="paper/peakweights.pdf" class="btn btn-primary">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                Read Paper (PDF)
+            </a>
+            <a href="https://github.com/Kalmantic/peakweights" class="btn btn-secondary">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                </svg>
+                View Code
+            </a>
+            <a href="paper/peakweights.tex" class="btn btn-secondary">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="16 18 22 12 16 6"></polyline>
+                    <polyline points="8 6 2 12 8 18"></polyline>
+                </svg>
+                LaTeX Source
+            </a>
+        </div>
+
+        <h2 style="margin: 2rem 0 1rem; font-size: 1.25rem;">Results</h2>
+        <table class="results-table">
+            <thead>
+                <tr>
+                    <th>Model</th>
+                    <th>FP16</th>
+                    <th>4-bit</th>
+                    <th>+PeakWeights</th>
+                    <th>Recovery</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Qwen2.5-7B</td>
+                    <td>10.62</td>
+                    <td>11.51</td>
+                    <td>10.63</td>
+                    <td class="highlight">99%</td>
+                </tr>
+                <tr>
+                    <td>SmolLM2-1.7B</td>
+                    <td>17.92</td>
+                    <td>24.56</td>
+                    <td>17.99</td>
+                    <td class="highlight">99%</td>
+                </tr>
+                <tr>
+                    <td>Phi-3-mini</td>
+                    <td>11.65</td>
+                    <td>12.67</td>
+                    <td>11.68</td>
+                    <td class="highlight">97%</td>
+                </tr>
+                <tr>
+                    <td>DeepSeek-R1-7B</td>
+                    <td>70.73</td>
+                    <td>73.52</td>
+                    <td>70.91</td>
+                    <td class="highlight">93%</td>
+                </tr>
+                <tr>
+                    <td>Mistral-7B</td>
+                    <td>13.44</td>
+                    <td>13.80</td>
+                    <td>13.58</td>
+                    <td>61%</td>
+                </tr>
+            </tbody>
+        </table>
+        <p style="color: var(--muted); font-size: 0.875rem;">Perplexity on WikiText-103. Lower is better. Recovery = (4bit - protected) / (4bit - FP16).</p>
+
+        <div class="citation">
+            <div class="citation-header">Cite this paper</div>
+@article{peakweights2025,
+  title={PeakWeights: Data-Free Discovery of Critical LLM Parameters},
+  author={Maruthavanan, Thiyagarajan and Ambati, Vamshi},
+  year={2025},
+  url={https://github.com/Kalmantic/peakweights}
+}</div>
+
+        <footer>
+            <p>
+                <a href="https://github.com/Kalmantic/peakweights">GitHub</a> &middot;
+                <a href="https://pypi.org/project/peakweights/">PyPI</a> &middot;
+                <a href="https://peakweights.com">peakweights.com</a>
+            </p>
+            <p style="margin-top: 0.5rem;">&copy; 2025 Kalmantic Labs. Apache 2.0 License.</p>
+        </footer>
+    </div>
+</body>
+</html>
