@@ -1,0 +1,525 @@
+{
+  "peakweights": "1.0",
+  "model": "microsoft/Phi-3-mini-4k-instruct",
+  "k": 50,
+  "generated": "2026-01-09T00:31:10.632663",
+  "total_params": "3.8B",
+  "weights": [
+    {
+      "rank": 1,
+      "score": 1626.0,
+      "module": "model.layers.2.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 2,
+      "score": 1553.0,
+      "module": "model.layers.4.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 3,
+      "score": 1206.0,
+      "module": "model.layers.29.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 4,
+      "score": 1007.5,
+      "module": "model.layers.4.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 5,
+      "score": 969.5,
+      "module": "model.layers.4.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 6,
+      "score": 965.0,
+      "module": "model.layers.2.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 7,
+      "score": 956.5,
+      "module": "model.layers.2.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 8,
+      "score": 740.0,
+      "module": "model.layers.29.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 9,
+      "score": 729.0,
+      "module": "model.layers.29.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 10,
+      "score": 619.0,
+      "module": "model.layers.29.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 11,
+      "score": 493.0,
+      "module": "model.layers.2.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 12,
+      "score": 483.75,
+      "module": "model.layers.29.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 13,
+      "score": 477.0,
+      "module": "model.layers.29.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 14,
+      "score": 445.75,
+      "module": "model.layers.2.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 15,
+      "score": 442.75,
+      "module": "model.layers.29.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 16,
+      "score": 379.25,
+      "module": "model.layers.29.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 17,
+      "score": 342.75,
+      "module": "model.layers.31.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 18,
+      "score": 311.75,
+      "module": "model.layers.2.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 19,
+      "score": 308.25,
+      "module": "model.layers.29.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 20,
+      "score": 277.0,
+      "module": "model.layers.7.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 21,
+      "score": 247.62,
+      "module": "model.layers.29.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 22,
+      "score": 238.25,
+      "module": "model.layers.29.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 23,
+      "score": 235.0,
+      "module": "model.layers.31.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 24,
+      "score": 224.62,
+      "module": "model.layers.29.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 25,
+      "score": 216.38,
+      "module": "model.layers.31.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 26,
+      "score": 212.5,
+      "module": "model.layers.29.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 27,
+      "score": 210.62,
+      "module": "model.layers.4.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 28,
+      "score": 209.5,
+      "module": "model.layers.2.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 29,
+      "score": 206.88,
+      "module": "model.layers.29.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 30,
+      "score": 205.75,
+      "module": "model.layers.29.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 31,
+      "score": 182.88,
+      "module": "model.layers.31.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 32,
+      "score": 178.5,
+      "module": "model.layers.31.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 33,
+      "score": 173.12,
+      "module": "model.layers.29.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 34,
+      "score": 171.75,
+      "module": "model.layers.31.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 35,
+      "score": 167.62,
+      "module": "model.layers.31.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 36,
+      "score": 167.0,
+      "module": "model.layers.31.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 37,
+      "score": 166.25,
+      "module": "model.layers.31.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 38,
+      "score": 166.0,
+      "module": "model.layers.31.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 39,
+      "score": 164.62,
+      "module": "model.layers.29.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 40,
+      "score": 163.0,
+      "module": "model.layers.31.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 41,
+      "score": 163.0,
+      "module": "model.layers.31.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 42,
+      "score": 153.0,
+      "module": "model.layers.4.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 43,
+      "score": 152.0,
+      "module": "model.layers.31.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 44,
+      "score": 151.62,
+      "module": "model.layers.31.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 45,
+      "score": 147.62,
+      "module": "model.layers.31.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 46,
+      "score": 146.5,
+      "module": "model.layers.31.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 47,
+      "score": 145.75,
+      "module": "model.layers.31.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 48,
+      "score": 144.25,
+      "module": "model.layers.31.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 49,
+      "score": 141.12,
+      "module": "model.layers.31.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 50,
+      "score": 139.88,
+      "module": "model.layers.31.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    }
+  ],
+  "summary": {
+    "by_type": {
+      "mlp": 50
+    },
+    "score_total": 19725.38,
+    "layer_range": [
+      2,
+      31
+    ]
+  },
+  "metrics": {
+    "fp16_ppl": 11.65,
+    "int4_ppl": 12.67,
+    "recovery_at_50": 97.3,
+    "power_law_exponent": 0.454
+  }
+}

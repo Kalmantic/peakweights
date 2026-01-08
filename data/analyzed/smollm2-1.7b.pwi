@@ -1,0 +1,526 @@
+{
+  "peakweights": "1.0",
+  "model": "HuggingFaceTB/SmolLM2-1.7B",
+  "k": 50,
+  "generated": "2026-01-09T00:31:10.631652",
+  "total_params": "1.7B",
+  "weights": [
+    {
+      "rank": 1,
+      "score": 21328.0,
+      "module": "model.layers.7.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 2,
+      "score": 5612.0,
+      "module": "model.layers.22.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 3,
+      "score": 5360.0,
+      "module": "model.layers.22.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 4,
+      "score": 2586.0,
+      "module": "model.layers.7.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 5,
+      "score": 2432.0,
+      "module": "model.layers.7.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 6,
+      "score": 1856.0,
+      "module": "model.layers.7.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 7,
+      "score": 1586.0,
+      "module": "model.layers.1.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 8,
+      "score": 994.5,
+      "module": "model.layers.7.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 9,
+      "score": 894.5,
+      "module": "model.layers.7.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 10,
+      "score": 827.0,
+      "module": "model.layers.22.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 11,
+      "score": 778.0,
+      "module": "model.layers.7.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 12,
+      "score": 679.0,
+      "module": "model.layers.7.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 13,
+      "score": 598.0,
+      "module": "model.layers.23.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 14,
+      "score": 566.0,
+      "module": "model.layers.22.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 15,
+      "score": 500.5,
+      "module": "model.layers.7.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 16,
+      "score": 499.0,
+      "module": "model.layers.23.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 17,
+      "score": 355.5,
+      "module": "model.layers.7.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 18,
+      "score": 344.5,
+      "module": "model.layers.21.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 19,
+      "score": 342.75,
+      "module": "model.layers.23.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 20,
+      "score": 338.5,
+      "module": "model.layers.23.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 21,
+      "score": 334.25,
+      "module": "model.layers.23.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 22,
+      "score": 322.75,
+      "module": "model.layers.7.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 23,
+      "score": 312.5,
+      "module": "model.layers.7.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 24,
+      "score": 308.5,
+      "module": "model.layers.1.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 25,
+      "score": 302.75,
+      "module": "model.layers.7.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 26,
+      "score": 297.75,
+      "module": "model.layers.7.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 27,
+      "score": 280.5,
+      "module": "model.layers.7.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 28,
+      "score": 270.75,
+      "module": "model.layers.23.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 29,
+      "score": 262.0,
+      "module": "model.layers.23.self_attn.o_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 30,
+      "score": 257.0,
+      "module": "model.layers.23.self_attn.o_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 31,
+      "score": 253.5,
+      "module": "model.layers.23.self_attn.o_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 32,
+      "score": 250.62,
+      "module": "model.layers.23.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 33,
+      "score": 244.75,
+      "module": "model.layers.23.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 34,
+      "score": 243.88,
+      "module": "model.layers.7.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 35,
+      "score": 241.0,
+      "module": "model.layers.23.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 36,
+      "score": 240.62,
+      "module": "model.layers.23.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 37,
+      "score": 240.25,
+      "module": "model.layers.7.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 38,
+      "score": 239.75,
+      "module": "model.layers.23.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 39,
+      "score": 239.25,
+      "module": "model.layers.23.self_attn.o_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 40,
+      "score": 237.88,
+      "module": "model.layers.23.self_attn.o_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 41,
+      "score": 232.88,
+      "module": "model.layers.23.self_attn.o_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 42,
+      "score": 231.38,
+      "module": "model.layers.23.self_attn.o_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 43,
+      "score": 230.88,
+      "module": "model.layers.23.self_attn.o_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 44,
+      "score": 230.12,
+      "module": "model.layers.23.self_attn.o_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 45,
+      "score": 230.0,
+      "module": "model.layers.7.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 46,
+      "score": 228.88,
+      "module": "model.layers.23.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 47,
+      "score": 227.62,
+      "module": "model.layers.23.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 48,
+      "score": 225.25,
+      "module": "model.layers.23.self_attn.o_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 49,
+      "score": 222.75,
+      "module": "model.layers.23.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    },
+    {
+      "rank": 50,
+      "score": 222.75,
+      "module": "model.layers.23.mlp.down_proj",
+      "position": [
+        0,
+        0
+      ],
+      "value": 0.0
+    }
+  ],
+  "summary": {
+    "by_type": {
+      "mlp": 40,
+      "attention": 10
+    },
+    "score_total": 56140.5,
+    "layer_range": [
+      1,
+      23
+    ]
+  },
+  "metrics": {
+    "fp16_ppl": 17.92,
+    "int4_ppl": 24.56,
+    "recovery_at_50": 99.0,
+    "power_law_exponent": 0.494
+  }
+}
