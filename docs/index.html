@@ -8,16 +8,10 @@
     <meta property="og:title" content="PeakWeights Paper">
     <meta property="og:description" content="Data-Free Discovery of Critical LLM Parameters">
     <meta property="og:type" content="article">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg: #0a0a0a;
-            --fg: #e5e5e5;
-            --accent: #3b82f6;
-            --accent-dim: #1e40af;
-            --muted: #737373;
-            --border: #262626;
-        }
-
         * {
             margin: 0;
             padding: 0;
@@ -25,11 +19,15 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: var(--bg);
-            color: var(--fg);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f9fafb;
+            color: #1a1a2e;
             line-height: 1.6;
             min-height: 100vh;
+        }
+
+        code, pre {
+            font-family: 'JetBrains Mono', 'SF Mono', Monaco, Consolas, monospace;
         }
 
         .container {
@@ -44,64 +42,63 @@
         }
 
         h1 {
-            font-size: 2.5rem;
+            font-size: 2.25rem;
             font-weight: 700;
             margin-bottom: 1rem;
-            background: linear-gradient(135deg, var(--fg) 0%, var(--accent) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: #1a1a2e;
         }
 
         .subtitle {
-            font-size: 1.25rem;
-            color: var(--muted);
-            margin-bottom: 1.5rem;
+            font-size: 1.125rem;
+            color: #6b7280;
+            margin-bottom: 1rem;
         }
 
         .authors {
-            color: var(--muted);
+            color: #6b7280;
             font-size: 0.95rem;
         }
 
         .authors a {
-            color: var(--accent);
+            color: #1a1a2e;
             text-decoration: none;
         }
 
         .authors a:hover {
-            text-decoration: underline;
+            color: #ca8a04;
         }
 
         .date {
-            color: var(--muted);
+            color: #6b7280;
             font-size: 0.875rem;
             margin-top: 0.5rem;
         }
 
         .abstract {
-            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(30, 64, 175, 0.05) 100%);
-            border: 1px solid var(--border);
-            border-radius: 12px;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
             padding: 2rem;
             margin-bottom: 2rem;
         }
 
         .abstract h2 {
-            font-size: 1rem;
+            font-size: 0.75rem;
             text-transform: uppercase;
             letter-spacing: 0.1em;
-            color: var(--accent);
+            color: #6b7280;
             margin-bottom: 1rem;
+            font-weight: 500;
         }
 
         .abstract p {
-            color: var(--fg);
+            color: #1a1a2e;
             font-size: 1rem;
         }
 
         .key-result {
-            background: var(--border);
+            background: white;
+            border: 1px solid #e5e7eb;
             border-radius: 8px;
             padding: 1.5rem;
             margin: 2rem 0;
@@ -111,11 +108,11 @@
         .key-result .number {
             font-size: 3rem;
             font-weight: 700;
-            color: var(--accent);
+            color: #1a1a2e;
         }
 
         .key-result .label {
-            color: var(--muted);
+            color: #6b7280;
             font-size: 0.95rem;
             margin-top: 0.5rem;
         }
@@ -141,22 +138,22 @@
         }
 
         .btn-primary {
-            background: var(--accent);
+            background: #1a1a2e;
             color: white;
         }
 
         .btn-primary:hover {
-            background: var(--accent-dim);
+            background: #2d2d44;
         }
 
         .btn-secondary {
-            background: var(--border);
-            color: var(--fg);
-            border: 1px solid var(--border);
+            background: white;
+            color: #1a1a2e;
+            border: 1px solid #e5e7eb;
         }
 
         .btn-secondary:hover {
-            border-color: var(--muted);
+            border-color: #1a1a2e;
         }
 
         .results-table {
@@ -164,53 +161,68 @@
             border-collapse: collapse;
             margin: 2rem 0;
             font-size: 0.9rem;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            overflow: hidden;
         }
 
         .results-table th,
         .results-table td {
             padding: 0.75rem 1rem;
             text-align: left;
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid #e5e7eb;
         }
 
         .results-table th {
-            color: var(--muted);
+            color: #6b7280;
             font-weight: 500;
             font-size: 0.8rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
+            background: white;
         }
 
         .results-table td {
-            color: var(--fg);
+            color: #1a1a2e;
         }
 
         .results-table tr:hover {
-            background: rgba(255, 255, 255, 0.02);
+            background: #f9fafb;
         }
 
-        .highlight {
-            color: var(--accent);
+        .results-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .highlight-green {
+            color: #2d6a4f;
+            font-weight: 600;
+        }
+
+        .highlight-red {
+            color: #991b1b;
+        }
+
+        .highlight-warning {
+            color: #b45309;
             font-weight: 600;
         }
 
         .citation {
-            background: #111;
-            border: 1px solid var(--border);
+            background: #1a1a2e;
             border-radius: 8px;
             padding: 1.5rem;
             margin: 2rem 0;
-            font-family: 'Monaco', 'Menlo', monospace;
             font-size: 0.8rem;
             overflow-x: auto;
             white-space: pre-wrap;
-            color: var(--muted);
+            color: #e5e5e5;
         }
 
         .citation-header {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             font-size: 0.875rem;
-            color: var(--fg);
+            color: #1a1a2e;
             margin-bottom: 1rem;
             font-weight: 500;
         }
@@ -218,19 +230,19 @@
         footer {
             margin-top: 4rem;
             padding-top: 2rem;
-            border-top: 1px solid var(--border);
+            border-top: 1px solid #e5e7eb;
             text-align: center;
-            color: var(--muted);
+            color: #6b7280;
             font-size: 0.875rem;
         }
 
         footer a {
-            color: var(--accent);
+            color: #1a1a2e;
             text-decoration: none;
         }
 
         footer a:hover {
-            text-decoration: underline;
+            color: #ca8a04;
         }
 
         @media (max-width: 600px) {
@@ -281,7 +293,7 @@
                     <line x1="16" y1="17" x2="8" y2="17"></line>
                     <polyline points="10 9 9 9 8 9"></polyline>
                 </svg>
-                Read Paper (PDF)
+                Download PDF
             </a>
             <a href="https://github.com/Kalmantic/peakweights" class="btn btn-secondary">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -313,45 +325,44 @@
                 <tr>
                     <td>Qwen2.5-7B</td>
                     <td>10.62</td>
-                    <td>11.51</td>
-                    <td>10.63</td>
-                    <td class="highlight">99%</td>
+                    <td class="highlight-red">11.51</td>
+                    <td class="highlight-green">10.63</td>
+                    <td class="highlight-green">99%</td>
                 </tr>
                 <tr>
                     <td>SmolLM2-1.7B</td>
                     <td>17.92</td>
-                    <td>24.56</td>
-                    <td>17.99</td>
-                    <td class="highlight">99%</td>
+                    <td class="highlight-red">24.56</td>
+                    <td class="highlight-green">17.99</td>
+                    <td class="highlight-green">99%</td>
                 </tr>
                 <tr>
                     <td>Phi-3-mini</td>
                     <td>11.65</td>
-                    <td>12.67</td>
-                    <td>11.68</td>
-                    <td class="highlight">97%</td>
+                    <td class="highlight-red">12.67</td>
+                    <td class="highlight-green">11.68</td>
+                    <td class="highlight-green">97%</td>
                 </tr>
                 <tr>
                     <td>DeepSeek-R1-7B</td>
                     <td>70.73</td>
-                    <td>73.52</td>
-                    <td>70.91</td>
-                    <td class="highlight">93%</td>
+                    <td class="highlight-red">73.52</td>
+                    <td class="highlight-green">70.91</td>
+                    <td class="highlight-green">93%</td>
                 </tr>
                 <tr>
                     <td>Mistral-7B</td>
                     <td>13.44</td>
-                    <td>13.80</td>
+                    <td class="highlight-red">13.80</td>
                     <td>13.58</td>
-                    <td>61%</td>
+                    <td class="highlight-warning">61%</td>
                 </tr>
             </tbody>
         </table>
-        <p style="color: var(--muted); font-size: 0.875rem;">Perplexity on WikiText-103. Lower is better. Recovery = (4bit - protected) / (4bit - FP16).</p>
+        <p style="color: #6b7280; font-size: 0.875rem;">Perplexity on WikiText-103. Lower is better. Recovery = (4bit - protected) / (4bit - FP16).</p>
 
-        <div class="citation">
-            <div class="citation-header">Cite this paper</div>
-@article{peakweights2025,
+        <div class="citation-header">Cite this paper</div>
+        <div class="citation">@article{peakweights2025,
   title={PeakWeights: Data-Free Discovery of Critical LLM Parameters},
   author={Maruthavanan, Thiyagarajan and Ambati, Vamshi},
   year={2025},
@@ -364,7 +375,7 @@
                 <a href="https://pypi.org/project/peakweights/">PyPI</a> &middot;
                 <a href="https://peakweights.com">peakweights.com</a>
             </p>
-            <p style="margin-top: 0.5rem;">&copy; 2025 Kalmantic Labs. Apache 2.0 License.</p>
+            <p style="margin-top: 0.5rem;">&copy; 2025 Kalmantic AI Labs. Apache 2.0 License.</p>
         </footer>
     </div>
 </body>
